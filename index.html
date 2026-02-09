@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClaudeRogue — Explorations in AI Delight</title>
+  <meta name="description" content="Projects exploring how to make AI more delightful and accessible. By an engineer who builds for fun.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Anthropic Serif Display';
+      src: url('./fonts/AnthropicSerif-Display-Regular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'FirstOrder';
+      src: url('./fonts/firstorder.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    :root {
+      --bg-deep: #0a0a0a;
+      --bg-surface: #131313;
+      --bg-elevated: #1c1c1c;
+      --border: #333333;
+      --border-highlight: #4a4a4a;
+
+      --text-primary: #f0f0f0;
+      --text-secondary: #a8a8a8;
+      --text-dim: #727272;
+      --text-ghost: #3a3a3a;
+
+      --accent-gold: #e0b45c;
+      --accent-gold-dim: rgba(224, 180, 92, 0.15);
+      --accent-cyan: #5ee0d6;
+      --accent-cyan-dim: rgba(94, 224, 214, 0.15);
+      --accent-magenta: #d48ae8;
+      --accent-red: #e8818a;
+      --accent-green: #a8d486;
+
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══ Vignette overlay ═══ */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+      z-index: 1000;
+    }
+
+    /* ═══ Floating ASCII particles ═══ */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      font-family: var(--font-mono);
+      color: var(--text-ghost);
+      font-size: 0.7rem;
+      opacity: 0;
+      animation: float-up linear infinite;
+    }
+
+    @keyframes float-up {
+      0% { opacity: 0; transform: translateY(100vh) rotate(0deg); }
+      10% { opacity: 0.4; }
+      90% { opacity: 0.4; }
+      100% { opacity: 0; transform: translateY(-20px) rotate(180deg); }
+    }
+
+    /* ═══ Main container ═══ */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ═══ Header ═══ */
+    .header {
+      margin-bottom: 0.75rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      gap: 0;
+    }
+
+    .logo-mascot {
+      width: 48px;
+      height: auto;
+      margin-right: 0.5rem;
+      image-rendering: auto;
+      filter: drop-shadow(0 0 8px rgba(212, 168, 83, 0.3));
+      transition: transform 0.3s ease;
+    }
+
+    .logo-mascot:hover {
+      transform: rotate(-8deg) scale(1.08);
+    }
+
+    .logo-claude {
+      font-family: 'Anthropic Serif Display', Georgia, serif;
+      font-size: 2.6rem;
+      color: #a8a29e;
+      line-height: 1;
+      letter-spacing: -0.01em;
+    }
+
+    .logo-ro {
+      font-family: 'FirstOrder', sans-serif;
+      font-size: 2.9rem;
+      color: var(--accent-gold);
+      line-height: 1;
+      margin-left: 0.15em;
+      text-shadow: 0 0 30px rgba(212, 168, 83, 0.3);
+    }
+
+    .logo-gue {
+      font-family: 'FirstOrder', sans-serif;
+      font-size: 2.9rem;
+      color: var(--accent-gold);
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(212, 168, 83, 0.3);
+    }
+
+    .tagline {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .tagline .hl {
+      color: var(--accent-cyan);
+    }
+
+    /* ═══ Content stage — left column (header+video) + right column (field notes) ═══ */
+    .content-stage {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: stretch;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fade-in 0.8s ease 0.2s forwards;
+    }
+
+    .main-column {
+      min-width: 0;
+    }
+
+    /* ═══ Definition panel — always full width, content reveals progressively ═══ */
+    .definition-panel {
+      width: 240px;
+      overflow: hidden;
+      align-self: start;
+    }
+
+    .definition-panel .sidebar-panel {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      border-color: transparent;
+      transition: border-color 0.5s ease;
+    }
+
+    /* Unlit state: word visible but dim, definition hidden */
+    .definition-panel.unlit .sidebar-panel {
+      border-color: var(--border);
+      background: var(--bg-surface);
+    }
+
+    .definition-panel.unlit .sidebar-panel-body {
+      opacity: 1;
+      padding: 0.5rem 0.65rem;
+    }
+
+    .definition-panel.unlit .dict-word {
+      color: var(--text-dim);
+      margin-bottom: 0;
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+    }
+
+    .definition-panel.unlit .dict-phonetic,
+    .definition-panel.unlit .dict-pos {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    .definition-panel.unlit .dict-defs,
+    .definition-panel.unlit .dict-sep {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    .definition-panel.unlit #mini-game-reveal {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    /* Illuminated: word glows gold, definition unfolds */
+    .definition-panel.illuminated .sidebar-panel {
+      border-color: var(--border);
+      background: var(--bg-surface);
+    }
+
+    .definition-panel.illuminated .sidebar-panel-body {
+      opacity: 1;
+      padding: 0.65rem;
+    }
+
+    .definition-panel.illuminated .dict-word {
+      color: var(--accent-gold);
+      text-shadow: 0 0 12px rgba(212, 168, 83, 0.5), 0 0 30px rgba(212, 168, 83, 0.2);
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+    }
+
+    .definition-panel.illuminated .dict-phonetic,
+    .definition-panel.illuminated .dict-pos {
+      opacity: 1;
+      max-height: 2rem;
+      overflow: visible;
+      transition: opacity 0.5s ease, max-height 0.5s ease;
+    }
+
+    .definition-panel.illuminated .dict-defs,
+    .definition-panel.illuminated .dict-sep {
+      max-height: 200px;
+      opacity: 1;
+      overflow: visible;
+      transition: max-height 0.8s ease, opacity 0.6s ease 0.2s;
+    }
+
+    .definition-panel.illuminated #mini-game-reveal {
+      max-height: 250px;
+      opacity: 1;
+      overflow: visible;
+      transition: opacity 0.5s ease 0.6s, max-height 0.6s ease 0.4s;
+    }
+
+    /* ═══ Discovery path SVG overlay ═══ */
+    .discovery-path-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      pointer-events: none;
+      z-index: 50;
+      overflow: visible;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .discovery-path-svg.visible {
+      opacity: 1;
+    }
+
+    #discovery-path-line {
+      stroke: none;
+      fill: none;
+    }
+
+    .discovery-step {
+      fill: var(--accent-gold);
+      filter: drop-shadow(0 0 3px rgba(212, 168, 83, 0.5));
+    }
+
+    /* ═══ Mobile glow pulse sweep ═══ */
+    .glow-sweep {
+      position: absolute;
+      left: -2rem;
+      right: -2rem;
+      height: 120px;
+      top: 0;
+      background: radial-gradient(ellipse 100% 100% at center, rgba(212, 168, 83, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 100;
+      animation: glow-sweep-down 2s ease-in-out forwards;
+    }
+
+    @keyframes glow-sweep-down {
+      0% { transform: translateY(0); opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { transform: translateY(var(--sweep-distance)); opacity: 0; }
+    }
+
+    /* ═══ Video section — full width ═══ */
+    .video-section {
+      min-width: 0;
+    }
+
+    /* Terminal intro */
+    .terminal-intro {
+      margin-bottom: 0.75rem;
+    }
+
+    .term-line {
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text-dim);
+      min-height: 1.2em;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .term-line:empty { display: none; }
+
+    .term-cursor::after {
+      content: '█';
+      color: var(--accent-green);
+      animation: cursor-blink 0.6s step-end infinite;
+    }
+
+    @keyframes cursor-blink {
+      50% { opacity: 0; }
+    }
+
+    .term-line .prompt { color: var(--accent-green); }
+    .term-line .cmd { color: var(--text-primary); }
+    .term-line .flag { color: var(--accent-cyan); }
+    .term-line .str { color: var(--accent-gold); }
+    .term-line .comment { color: var(--text-dim); font-style: italic; }
+    .term-line .output { color: var(--text-secondary); }
+
+    @keyframes slide-in {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes fade-in {
+      to { opacity: 1; }
+    }
+
+    /* ═══ Video Frame ═══ */
+    .video-frame {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+    }
+
+    .frame-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .frame-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .frame-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border-highlight);
+    }
+
+    .frame-dot.red { background: var(--accent-red); opacity: 0.7; }
+    .frame-dot.gold { background: var(--accent-gold); opacity: 0.7; }
+    .frame-dot.green { background: var(--accent-green); opacity: 0.7; }
+
+    .frame-title {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+
+    .frame-status {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #050508;
+      overflow: hidden;
+    }
+
+    .video-container iframe,
+    .video-container .video-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .video-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      background: #050508;
+      color: var(--text-dim);
+    }
+
+    .video-placeholder .play-icon {
+      width: 56px;
+      height: 56px;
+      border: 2px solid var(--accent-gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-gold);
+      font-size: 1.3rem;
+      animation: pulse-glow 3s ease-in-out infinite;
+      cursor: default;
+    }
+
+    .video-placeholder .placeholder-text {
+      font-size: 0.7rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .video-placeholder .placeholder-text .gold { color: var(--accent-gold); }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(212, 168, 83, 0.2); }
+      50% { box-shadow: 0 0 30px rgba(212, 168, 83, 0.4); }
+    }
+
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.06) 2px,
+        rgba(0, 0, 0, 0.06) 4px
+      );
+      z-index: 2;
+    }
+
+    .frame-statusbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.35rem 0.75rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+    }
+
+    .status-left { display: flex; gap: 1rem; }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: blink 2s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0.3; }
+    }
+
+    /* ═══ Sidebar — field journal ═══ */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .sidebar-panel {
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      position: relative;
+    }
+
+    .sidebar-panel-header {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 0.4rem 0.65rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .sidebar-panel-body {
+      padding: 0.65rem;
+    }
+
+    /* Dictionary — sidebar version */
+    .dict-word {
+      font-family: 'Anthropic Serif Display', Georgia, serif;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 0.15rem;
+    }
+
+    .dict-phonetic {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.15rem;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+
+    .dict-pos {
+      font-size: 0.6rem;
+      font-style: italic;
+      color: var(--accent-gold);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    .dict-sep {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 0.5rem;
+    }
+
+    .dict-defs {
+      list-style: none;
+      counter-reset: def;
+    }
+
+    .dict-defs li {
+      counter-increment: def;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 0.3rem;
+      padding-left: 1.2em;
+      position: relative;
+    }
+
+    .dict-defs li::before {
+      content: counter(def) '.';
+      position: absolute;
+      left: 0;
+      color: var(--text-dim);
+      font-size: 0.65rem;
+      font-weight: 500;
+    }
+
+    .dict-defs li .def-hl {
+      color: var(--accent-cyan);
+    }
+
+    /* Mini game — sidebar version */
+    .mini-game-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem;
+    }
+
+    .mini-game-frame {
+      border: 1px solid var(--border);
+      background: var(--bg-deep);
+      padding: 2px;
+      position: relative;
+    }
+
+    #mini-canvas {
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #050508;
+    }
+
+    .mini-game-label {
+      font-size: 0.5rem;
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.35rem;
+    }
+
+    .mini-scanlines {
+      position: absolute;
+      inset: 2px;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.08) 2px,
+        rgba(0, 0, 0, 0.08) 4px
+      );
+    }
+
+    /* ═══ Dungeon divider ═══ */
+    /* ═══ Footer ═══ */
+    .footer {
+      margin-top: 2rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+      opacity: 0;
+      animation: fade-in 0.6s ease 1.5s forwards;
+    }
+
+    .footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .footer a:hover { color: var(--accent-cyan); }
+
+    .social-links {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .attribution {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      margin-top: 0.3rem;
+    }
+
+    .attribution a { color: var(--text-dim); }
+
+    .footer-ascii {
+      color: var(--text-ghost);
+      font-size: 0.5rem;
+      text-align: right;
+      line-height: 1.3;
+      white-space: pre;
+    }
+
+    /* ═══ Selection ═══ */
+    ::selection {
+      background: var(--accent-gold);
+      color: var(--bg-deep);
+    }
+
+    /* ═══ Scrollbar ═══ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-highlight); }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 800px) {
+      .content-stage {
+        grid-template-columns: 1fr;
+      }
+      .definition-panel {
+        width: 100%;
+        order: 1; /* Definition below video on mobile */
+      }
+      .main-column {
+        order: 0;
+      }
+      .discovery-path-svg { display: none; }
+      .logo-mascot { width: 36px; margin-right: 0.3rem; }
+      .logo-claude { font-size: 2rem; }
+      .logo-ro, .logo-gue { font-size: 2.2rem; }
+      .container { padding: 1rem; }
+      .footer { flex-direction: column; align-items: center; text-align: center; }
+      .footer-ascii { display: none; }
+    }
+
+    @media (max-width: 520px) {
+      .definition-panel {
+        width: 100%;
+      }
+    }
+
+    @media (min-width: 801px) and (max-width: 1000px) {
+      .container { max-width: 900px; padding: 1.25rem 1.5rem; }
+      .definition-panel {
+        width: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Floating ASCII particles -->
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <!-- SVG overlay for discovery path animation -->
+    <svg id="discovery-path" class="discovery-path-svg" aria-hidden="true">
+      <path id="discovery-path-line" fill="none" />
+    </svg>
+
+    <!-- Content stage: left column (header + video) + right column (field notes) -->
+    <div class="content-stage">
+      <!-- Left column: header + video -->
+      <div class="main-column">
+        <header class="header">
+          <div class="logo" aria-label="ClaudeRogue">
+            <img src="assets/mascot.png" alt="ClaudeRogue dwarf mascot" class="logo-mascot">
+            <span class="logo-claude">Claude</span><span class="logo-ro">Ro</span><span class="logo-gue">Gue</span>
+          </div>
+          <p class="tagline">
+            <span class="hl">&gt;</span> explorations in making AI more <span class="hl">delightful</span> and <span class="hl">accessible</span>
+          </p>
+        </header>
+
+        <!-- Terminal intro -->
+        <div class="terminal-intro">
+          <div class="term-line" id="term-0"></div>
+          <div class="term-line" id="term-1"></div>
+        </div>
+
+        <!-- Video frame -->
+        <div class="video-frame">
+          <div class="frame-titlebar">
+            <div class="frame-dots">
+              <div class="frame-dot red"></div>
+              <div class="frame-dot gold"></div>
+              <div class="frame-dot green"></div>
+            </div>
+            <span class="frame-title">artifact playback</span>
+            <span class="frame-status">REC</span>
+          </div>
+
+          <div class="video-container">
+            <iframe src="https://www.loom.com/embed/8c7a739e583248c1828392388dacd072" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+          </div>
+
+          <div class="frame-statusbar">
+            <div class="status-left">
+              <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>ARTIFACT INTACT</span>
+              </div>
+            </div>
+            <span>clauderogue.com</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: definition sidebar — full height, starts hidden -->
+      <div class="definition-panel unlit" id="definition-panel">
+        <div class="sidebar-panel">
+          <div class="sidebar-panel-body">
+            <div class="dict-word">roguelike</div>
+            <div class="dict-phonetic">/ˈroʊɡ.laɪk/</div>
+            <span class="dict-pos">adjective</span>
+            <div class="dict-sep"></div>
+            <ol class="dict-defs">
+              <li>Of or resembling a class of video games characterized by <span class="def-hl">procedurally generated</span> levels, turn-based gameplay, and <span class="def-hl">permanent consequences</span> for every decision.</li>
+            </ol>
+          </div>
+          <!-- Mini game — revealed after definition expands -->
+          <div class="mini-game-body" id="mini-game-reveal">
+            <div class="mini-game-frame">
+              <canvas id="mini-canvas" width="160" height="160"></canvas>
+              <div class="mini-scanlines"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div>
+        <span>© 2025 ClaudeRogue · built with Claude Code</span>
+        <div class="attribution">
+          Sprites: <a href="https://opengameart.org/content/dawnlike-16x16-universal-rogue-like-tileset-v181" target="_blank">DawnLike</a> by DragonDePlatino · Palette by DawnBringer
+        </div>
+        <div class="social-links" style="margin-top: 0.4rem;">
+          <a href="https://github.com/yourusername" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://linkedin.com/in/yourprofile" target="_blank" rel="noopener">LinkedIn</a>
+        </div>
+      </div>
+      <pre class="footer-ascii" aria-hidden="true">  ╔═══╗
+  ║ ☼ ║
+  ╚═══╝</pre>
+    </footer>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════
+    // FLOATING ASCII PARTICLES
+    // ═══════════════════════════════════════
+    (function initParticles() {
+      const container = document.getElementById('particles');
+      const chars = ['·', '∙', '░', '▪', '∘', '⋅', '◦', '┊', '┈'];
+      const count = 30;
+
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        span.className = 'particle';
+        span.textContent = chars[Math.floor(Math.random() * chars.length)];
+        span.style.left = Math.random() * 100 + '%';
+        span.style.animationDuration = (15 + Math.random() * 25) + 's';
+        span.style.animationDelay = (Math.random() * 20) + 's';
+        span.style.fontSize = (0.5 + Math.random() * 0.5) + 'rem';
+        container.appendChild(span);
+      }
+    })();
+
+    // ═══════════════════════════════════════
+    // TERMINAL TYPEWRITER
+    // ═══════════════════════════════════════
+    (function initTypewriter() {
+      const lines = [
+        { id: 'term-0', html: '<span class="prompt">$</span> <span class="cmd">claude-rogue</span> <span class="flag">--demo</span> <span class="str">"steve-having-too-much-fun"</span>', typed: true, delay: 600 },
+        { id: 'term-1', html: '<span class="output">Loading artifact from the vault... done.</span>', typed: false, delay: 400 },
+      ];
+
+      // Extract plain text from HTML string
+      function stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent;
+      }
+
+      // Type a line character by character
+      function typeLine(el, html, plainText, callback) {
+        el.classList.add('term-cursor');
+        let i = 0;
+        const speed = 35; // ms per character
+        function tick() {
+          if (i <= plainText.length) {
+            // Build partial HTML by mapping plain text index to HTML
+            el.innerHTML = buildPartialHtml(html, i);
+            i++;
+            setTimeout(tick, speed + (Math.random() * 20 - 10));
+          } else {
+            el.innerHTML = html;
+            el.classList.remove('term-cursor');
+            if (callback) callback();
+          }
+        }
+        tick();
+      }
+
+      // Map a plain text character count to a partial HTML string
+      function buildPartialHtml(html, charCount) {
+        let result = '';
+        let plainIdx = 0;
+        let inTag = false;
+        for (let i = 0; i < html.length; i++) {
+          if (html[i] === '<') {
+            inTag = true;
+            // Find end of tag and include it
+            const end = html.indexOf('>', i);
+            if (end !== -1) {
+              result += html.substring(i, end + 1);
+              i = end;
+              inTag = false;
+              continue;
+            }
+          }
+          if (html[i] === '&') {
+            // HTML entity — find the semicolon
+            const semi = html.indexOf(';', i);
+            if (semi !== -1 && semi - i < 8) {
+              if (plainIdx < charCount) {
+                result += html.substring(i, semi + 1);
+                plainIdx++;
+              }
+              i = semi;
+              continue;
+            }
+          }
+          if (!inTag) {
+            if (plainIdx < charCount) {
+              result += html[i];
+            }
+            plainIdx++;
+          }
+        }
+        // Close any unclosed tags
+        const openTags = [];
+        const tagRe = /<\/?([a-z]+)[^>]*>/gi;
+        let m;
+        while ((m = tagRe.exec(result)) !== null) {
+          if (m[0][1] === '/') openTags.pop();
+          else if (!m[0].endsWith('/>')) openTags.push(m[1]);
+        }
+        for (let t = openTags.length - 1; t >= 0; t--) {
+          result += '</' + openTags[t] + '>';
+        }
+        return result;
+      }
+
+      // Reveal a line instantly
+      function revealLine(el, html, callback) {
+        el.innerHTML = html;
+        if (callback) callback();
+      }
+
+      // Sequence through all lines
+      function runSequence(idx) {
+        if (idx >= lines.length) {
+          document.dispatchEvent(new Event('typewriter-done'));
+          return;
+        }
+        const line = lines[idx];
+        const el = document.getElementById(line.id);
+        if (!el) return;
+
+        setTimeout(() => {
+          if (line.typed) {
+            const plain = stripHtml(line.html);
+            typeLine(el, line.html, plain, () => {
+              runSequence(idx + 1);
+            });
+          } else {
+            revealLine(el, line.html, () => {
+              runSequence(idx + 1);
+            });
+          }
+        }, line.delay);
+      }
+
+      runSequence(0);
+    })();
+
+    // ═══════════════════════════════════════
+    // DISCOVERY PATH — DISCRETE STEP MARKERS
+    // ═══════════════════════════════════════
+    (function initDiscoveryPath() {
+      var svg = document.getElementById('discovery-path');
+      var pathEl = document.getElementById('discovery-path-line');
+      var panel = document.getElementById('definition-panel');
+      var logoGue = document.querySelector('.logo-gue');
+      if (!svg || !pathEl || !panel || !logoGue) return;
+
+      // Reduced motion: instant reveal for accessibility
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.addEventListener('typewriter-done', function() {
+          setTimeout(function() {
+            panel.classList.remove('unlit');
+            panel.classList.add('illuminated');
+          }, 400);
+        });
+        return;
+      }
+
+      // Mobile: gold glow pulse sweeps down the page
+      if (window.matchMedia('(max-width: 800px)').matches) {
+        document.addEventListener('typewriter-done', function() {
+          setTimeout(function() {
+            var container = document.querySelector('.container');
+            var cRect = container.getBoundingClientRect();
+            var panelRect = panel.getBoundingClientRect();
+            var sweepDist = panelRect.top - cRect.top + panelRect.height * 0.3;
+
+            var glow = document.createElement('div');
+            glow.className = 'glow-sweep';
+            glow.style.setProperty('--sweep-distance', sweepDist + 'px');
+            container.appendChild(glow);
+
+            // Illuminate when pulse reaches the panel
+            var illuminateAt = 2000 * 0.85;
+            setTimeout(function() {
+              panel.classList.remove('unlit');
+              panel.classList.add('illuminated');
+            }, illuminateAt);
+
+            glow.addEventListener('animationend', function() {
+              glow.remove();
+            });
+          }, 600);
+        });
+        return;
+      }
+
+      document.addEventListener('typewriter-done', function() {
+        setTimeout(animatePath, 600);
+      });
+
+      function animatePath() {
+        var container = document.querySelector('.container');
+        var cRect = container.getBoundingClientRect();
+        var gueRect = logoGue.getBoundingClientRect();
+
+        // Start: right edge of "Gue", aligned to text baseline
+        var startX = gueRect.right - cRect.left + 8;
+        var startY = gueRect.top + gueRect.height * 0.65 - cRect.top;
+
+        // End: left edge of the "roguelike" word
+        var dictWord = panel.querySelector('.dict-word');
+        var wordRect = dictWord ? dictWord.getBoundingClientRect() : panel.getBoundingClientRect();
+        var endX = wordRect.left - cRect.left - 6;
+        var endY = wordRect.top + wordRect.height * 0.5 - cRect.top;
+
+        // Size SVG to cover the needed area
+        svg.style.height = Math.max(endY, startY) + 80 + 'px';
+
+        // Generate meandering path (invisible — used only for point sampling)
+        var d = meanderingPath(startX, startY, endX, endY);
+        pathEl.setAttribute('d', d);
+
+        var len = pathEl.getTotalLength();
+        svg.classList.add('visible');
+
+        // Sample discrete points along the path
+        var stepSpacing = 14;
+        var stepCount = Math.max(1, Math.floor(len / stepSpacing));
+        var stepDelay = 150; // ms between each step — plodding pace
+        var placed = 0;
+        var circles = [];
+
+        function placeNextStep() {
+          if (placed > stepCount) {
+            // Path complete — illuminate the word and unfold definition
+            panel.classList.remove('unlit');
+            panel.classList.add('illuminated');
+            // After definition starts expanding, fade out steps left-to-right
+            setTimeout(fadeOutSteps, 1200);
+            return;
+          }
+
+          var pt = pathEl.getPointAtLength((placed / stepCount) * len);
+          var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', pt.x.toFixed(1));
+          circle.setAttribute('cy', pt.y.toFixed(1));
+          circle.setAttribute('r', (1.2 + Math.random() * 0.6).toFixed(1));
+          circle.setAttribute('class', 'discovery-step');
+          circle.style.opacity = '0';
+          svg.appendChild(circle);
+          circles.push(circle);
+
+          // Fade in this step
+          requestAnimationFrame(function() {
+            circle.style.transition = 'opacity 0.15s ease';
+            circle.style.opacity = '1';
+          });
+
+          placed++;
+          setTimeout(placeNextStep, stepDelay);
+        }
+
+        function fadeOutSteps() {
+          var idx = 0;
+          var fadeDelay = 80;
+          function fadeNext() {
+            if (idx >= circles.length) return;
+            circles[idx].style.transition = 'opacity 0.3s ease';
+            circles[idx].style.opacity = '0';
+            idx++;
+            setTimeout(fadeNext, fadeDelay);
+          }
+          fadeNext();
+        }
+
+        placeNextStep();
+      }
+
+      function meanderingPath(x1, y1, x2, y2) {
+        var dx = x2 - x1;
+        var dy = y2 - y1;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 20) return 'M ' + x1 + ' ' + y1 + ' L ' + x2 + ' ' + y2;
+
+        // Perpendicular unit vector
+        var px = -dy / dist;
+        var py = dx / dist;
+
+        // More waypoints for a more meandering feel
+        var count = Math.max(4, Math.floor(dist / 40));
+        var pts = [{ x: x1, y: y1 }];
+        for (var i = 1; i <= count; i++) {
+          var t = i / (count + 1);
+          var baseX = x1 + dx * t;
+          var baseY = y1 + dy * t;
+          // Sinusoidal wander + jitter — more pronounced meander
+          var wave = Math.sin(t * Math.PI * 3) * 22;
+          var jitter = (Math.random() - 0.5) * 14;
+          var offset = wave + jitter;
+          pts.push({ x: baseX + px * offset, y: baseY + py * offset });
+        }
+        pts.push({ x: x2, y: y2 });
+
+        // Build smooth cubic Bezier path
+        var d = 'M ' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+        for (var i = 1; i < pts.length; i++) {
+          var prev = pts[i - 1];
+          var curr = pts[i];
+          var next = pts[i + 1] || curr;
+          var prevPrev = pts[i - 2] || prev;
+
+          var cp1x = prev.x + (curr.x - prevPrev.x) * 0.25;
+          var cp1y = prev.y + (curr.y - prevPrev.y) * 0.25;
+          var cp2x = curr.x - (next.x - prev.x) * 0.25;
+          var cp2y = curr.y - (next.y - prev.y) * 0.25;
+
+          d += ' C ' + cp1x.toFixed(1) + ' ' + cp1y.toFixed(1)
+             + ', ' + cp2x.toFixed(1) + ' ' + cp2y.toFixed(1)
+             + ', ' + curr.x.toFixed(1) + ' ' + curr.y.toFixed(1);
+        }
+        return d;
+      }
+    })();
+
+    // ═══════════════════════════════════════
+    // MINI AUTO-PLAYING ROGUELIKE
+    // ═══════════════════════════════════════
+    (function initMiniGame() {
+      const canvas = document.getElementById('mini-canvas');
+      if (!canvas) return;
+
+      const TILE = 16;
+      // Dynamically compute scale from canvas size
+      const W = 7, H = 7;
+      const SCALE = canvas.width / (W * TILE);
+      const ST = TILE * SCALE;
+
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+
+      // Mini dungeon map (1=wall, 0=floor)
+      const map = [
+        [1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,1],
+        [1,0,1,0,1,0,1],
+        [1,0,0,0,0,0,1],
+        [1,0,1,0,1,0,1],
+        [1,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1],
+      ];
+
+      // Entities
+      let player = { x: 1, y: 1 };
+      let monster = { x: 5, y: 5, alive: true };
+      let coin = { x: 3, y: 3, alive: true };
+      let animFrame = 0;
+      let moveTimer = 0;
+
+      // Load sprites
+      const imgs = {};
+      const sheets = {
+        floor: 'assets/Objects/Floor.png',
+        wall: 'assets/Objects/Wall.png',
+        player0: 'assets/Characters/Player0.png',
+        player1: 'assets/Characters/Player1.png',
+        slime0: 'assets/Characters/Slime0.png',
+        slime1: 'assets/Characters/Slime1.png',
+      };
+
+      let loaded = 0;
+      const total = Object.keys(sheets).length;
+
+      Object.entries(sheets).forEach(([name, src]) => {
+        const img = new Image();
+        img.onload = () => {
+          imgs[name] = img;
+          loaded++;
+          if (loaded === total) startGame();
+        };
+        img.onerror = () => { loaded++; };
+        img.src = src;
+      });
+
+      function drawTile(sheet, sx, sy, dx, dy) {
+        const img = imgs[sheet];
+        if (!img) return;
+        ctx.drawImage(img, sx * TILE, sy * TILE, TILE, TILE, dx * ST, dy * ST, ST, ST);
+      }
+
+      // Floor/wall tile coords
+      const FLOOR = { sheet: 'floor', x: 1, y: 10 };
+      const WALL_TOP = { sheet: 'wall', x: 1, y: 9 };
+      const WALL_FACE = { sheet: 'wall', x: 1, y: 10 };
+      const WALL_LRB = { sheet: 'wall', x: 1, y: 11 };
+
+      function isPillar(x, y) {
+        return map[y][x] === 1 &&
+          x > 0 && x < W - 1 && y > 0 && y < H - 1 &&
+          map[y][x - 1] === 0 && map[y][x + 1] === 0 &&
+          map[y + 1][x] === 0;
+      }
+
+      function getWallSprite(x, y) {
+        if (isPillar(x, y)) return WALL_LRB;
+        if (y + 1 < H && map[y + 1][x] === 0) return WALL_TOP;
+        return WALL_FACE;
+      }
+
+      function isFloor(x, y) {
+        return x >= 0 && x < W && y >= 0 && y < H && map[y][x] === 0;
+      }
+
+      function getFloorNeighbors(x, y) {
+        const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+        return dirs
+          .map(([dx, dy]) => ({ x: x+dx, y: y+dy }))
+          .filter(p => isFloor(p.x, p.y));
+      }
+
+      function movePlayer() {
+        let target;
+        if (coin.alive) {
+          target = coin;
+        } else if (monster.alive) {
+          target = monster;
+        } else {
+          const neighbors = getFloorNeighbors(player.x, player.y);
+          if (neighbors.length > 0) {
+            const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+            player.x = pick.x;
+            player.y = pick.y;
+          }
+          return;
+        }
+
+        const dx = Math.sign(target.x - player.x);
+        const dy = Math.sign(target.y - player.y);
+
+        let moved = false;
+        const tryMove = (mx, my) => {
+          if (!moved && isFloor(player.x + mx, player.y + my)) {
+            player.x += mx;
+            player.y += my;
+            moved = true;
+          }
+        };
+
+        if (Math.abs(target.x - player.x) >= Math.abs(target.y - player.y)) {
+          if (dx !== 0) tryMove(dx, 0);
+          if (dy !== 0) tryMove(0, dy);
+        } else {
+          if (dy !== 0) tryMove(0, dy);
+          if (dx !== 0) tryMove(dx, 0);
+        }
+
+        if (!moved) {
+          const neighbors = getFloorNeighbors(player.x, player.y);
+          if (neighbors.length > 0) {
+            const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+            player.x = pick.x;
+            player.y = pick.y;
+          }
+        }
+
+        if (coin.alive && player.x === coin.x && player.y === coin.y) {
+          coin.alive = false;
+        }
+        if (monster.alive && player.x === monster.x && player.y === monster.y) {
+          monster.alive = false;
+        }
+      }
+
+      function moveMonster() {
+        if (!monster.alive) return;
+        const neighbors = getFloorNeighbors(monster.x, monster.y);
+        if (neighbors.length > 0) {
+          const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+          monster.x = pick.x;
+          monster.y = pick.y;
+        }
+      }
+
+      function resetGame() {
+        player = { x: 1, y: 1 };
+        monster = { x: 5, y: 5, alive: true };
+        const floors = [];
+        for (let y = 0; y < H; y++)
+          for (let x = 0; x < W; x++)
+            if (map[y][x] === 0 && !(x === 1 && y === 1) && !(x === 5 && y === 5))
+              floors.push({ x, y });
+        const spot = floors[Math.floor(Math.random() * floors.length)];
+        coin = { x: spot.x, y: spot.y, alive: true };
+      }
+
+      function render() {
+        ctx.fillStyle = '#0a0a12';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            if (map[y][x] === 0) {
+              drawTile(FLOOR.sheet, FLOOR.x, FLOOR.y, x, y);
+            } else {
+              const ws = getWallSprite(x, y);
+              drawTile(ws.sheet, ws.x, ws.y, x, y);
+            }
+          }
+        }
+
+        if (coin.alive) {
+          const cx = coin.x * ST + ST / 2;
+          const cy = coin.y * ST + ST / 2;
+          ctx.fillStyle = '#d4a853';
+          ctx.shadowColor = 'rgba(212, 168, 83, 0.6)';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(cx, cy, Math.max(3, ST * 0.15), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        if (monster.alive) {
+          const sheet = animFrame === 0 ? 'slime0' : 'slime1';
+          drawTile(sheet, 4, 0, monster.x, monster.y);
+        }
+
+        const pSheet = animFrame === 0 ? 'player0' : 'player1';
+        drawTile(pSheet, 0, 0, player.x, player.y);
+      }
+
+      function startGame() {
+        resetGame();
+
+        let lastAnim = 0;
+        let lastMove = 0;
+
+        function tick(time) {
+          if (time - lastAnim > 500) {
+            animFrame = animFrame === 0 ? 1 : 0;
+            lastAnim = time;
+          }
+
+          // Move entities every 1200ms
+          if (time - lastMove > 1200) {
+            movePlayer();
+            moveMonster();
+            lastMove = time;
+
+            if (!coin.alive && !monster.alive) {
+              moveTimer++;
+              if (moveTimer > 4) {
+                resetGame();
+                moveTimer = 0;
+              }
+            }
+          }
+
+          render();
+          requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+      }
+    })();
+  </script>
+</body>
+</html>
