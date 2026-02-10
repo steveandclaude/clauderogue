@@ -1500,8 +1500,8 @@
         const neighbors = getFloorNeighbors(monster.x, monster.y);
         if (neighbors.length === 0) return;
 
-        // 40% chance to chase the player, 60% random wander
-        if (Math.random() < 0.4) {
+        // 55% chance to chase the player, 45% random wander
+        if (Math.random() < 0.55) {
           var best = neighbors[0], bestDist = Infinity;
           neighbors.forEach(function(n) {
             var d = Math.abs(n.x - player.x) + Math.abs(n.y - player.y);
@@ -1586,18 +1586,29 @@
 
           // Move entities every 1200ms
           if (time - lastMove > 1200) {
+            // Save positions to detect swaps
+            var prevPx = player.x, prevPy = player.y;
+            var prevMx = monster.x, prevMy = monster.y;
+
             movePlayer();
             moveMonster();
             lastMove = time;
+
+            // Detect swap (player moved to monster's old spot AND vice versa)
+            var swapped = (player.x === prevMx && player.y === prevMy &&
+                           monster.x === prevPx && monster.y === prevPy);
 
             // Monster eats old bones it walks over (before new bones placed)
             bones = bones.filter(function(b) {
               return !(b.x === monster.x && b.y === monster.y);
             });
 
-            // Monster kills player on overlap
-            if (!dead && player.x === monster.x && player.y === monster.y) {
-              bones.push({ x: player.x, y: player.y });
+            // Monster kills player on overlap or swap
+            if (!dead && (swapped || (player.x === monster.x && player.y === monster.y))) {
+              // Place bones at the encounter point
+              var boneX = swapped ? prevPx : player.x;
+              var boneY = swapped ? prevPy : player.y;
+              bones.push({ x: boneX, y: boneY });
               dead = true;
               deadTimer = 0;
               playerVisible = false;
