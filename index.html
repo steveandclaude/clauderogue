@@ -155,6 +155,16 @@
       text-shadow: 0 0 30px rgba(212, 168, 83, 0.3);
     }
 
+    @keyframes gue-pulse {
+      0%   { text-shadow: 0 0 30px rgba(212, 168, 83, 0.3); }
+      35%  { text-shadow: 0 0 12px rgba(224, 180, 92, 1), 0 0 35px rgba(224, 180, 92, 0.7), 0 0 60px rgba(224, 180, 92, 0.3); }
+      100% { text-shadow: 0 0 30px rgba(212, 168, 83, 0.3); }
+    }
+
+    .logo-gue.pulse, .logo-ro.pulse {
+      animation: gue-pulse 0.7s ease-out;
+    }
+
     .tagline {
       color: var(--text-secondary);
       font-size: 0.8rem;
@@ -327,6 +337,13 @@
       min-width: 0;
     }
 
+    /* Header divider */
+    .header-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent);
+      margin: 0.5rem 0 0.25rem;
+    }
+
     /* Terminal intro */
     .terminal-intro {
       margin-top: 0.75rem;
@@ -346,6 +363,11 @@
 
     .term-cursor::after {
       content: '█';
+      color: var(--accent-green);
+      animation: cursor-blink 0.6s step-end infinite;
+    }
+
+    .inline-cursor {
       color: var(--accent-green);
       animation: cursor-blink 0.6s step-end infinite;
     }
@@ -760,6 +782,7 @@
             <span class="hl">&gt;</span> explorations in making AI more <span class="hl">delightful</span> and <span class="hl">accessible</span>
           </p>
         </header>
+        <div class="header-divider"></div>
 
         <!-- Terminal intro -->
         <div class="terminal-intro">
@@ -816,10 +839,6 @@
         <div class="attribution">
           Sprites: <a href="https://opengameart.org/content/dawnlike-16x16-universal-rogue-like-tileset-v181" target="_blank">DawnLike</a> by DragonDePlatino · Palette by DawnBringer
         </div>
-        <div class="social-links" style="margin-top: 0.4rem;">
-          <a href="https://github.com/yourusername" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://linkedin.com/in/yourprofile" target="_blank" rel="noopener">LinkedIn</a>
-        </div>
       </div>
       <pre class="footer-ascii" aria-hidden="true">  ╔═══╗
   ║ ☼ ║
@@ -852,48 +871,29 @@
     // TERMINAL TYPEWRITER
     // ═══════════════════════════════════════
     (function initTypewriter() {
-      const lines = [
-        { id: 'term-0', html: '<span class="prompt">$</span> <span class="cmd">claude-rogue</span> <span class="flag">--demo</span> <span class="str">"steve-having-too-much-fun"</span>', typed: true, delay: 600 },
-        { id: 'term-1', html: '<span class="output">Loading artifact from the vault... done.</span>', typed: false, delay: 400 },
-      ];
+      var el = document.getElementById('term-0');
+      var el1 = document.getElementById('term-1');
+      if (!el || !el1) return;
 
-      // Extract plain text from HTML string
+      // Mistake version (typed first) and final version
+      var mistakeHtml = '<span class="prompt">$</span> <span class="cmd">claude-rogue</span> <span class="flag">--demo</span> <span class="str">"steve-having-fun"</span>';
+      var finalHtml = '<span class="prompt">$</span> <span class="cmd">claude-rogue</span> <span class="flag">--demo</span> <span class="str">"steve-having-too-much-fun"</span>';
+
       function stripHtml(html) {
-        const tmp = document.createElement('div');
+        var tmp = document.createElement('div');
         tmp.innerHTML = html;
         return tmp.textContent;
       }
 
-      // Type a line character by character
-      function typeLine(el, html, plainText, callback) {
-        el.classList.add('term-cursor');
-        let i = 0;
-        const speed = 35; // ms per character
-        function tick() {
-          if (i <= plainText.length) {
-            // Build partial HTML by mapping plain text index to HTML
-            el.innerHTML = buildPartialHtml(html, i);
-            i++;
-            setTimeout(tick, speed + (Math.random() * 20 - 10));
-          } else {
-            el.innerHTML = html;
-            el.classList.remove('term-cursor');
-            if (callback) callback();
-          }
-        }
-        tick();
-      }
-
       // Map a plain text character count to a partial HTML string
       function buildPartialHtml(html, charCount) {
-        let result = '';
-        let plainIdx = 0;
-        let inTag = false;
-        for (let i = 0; i < html.length; i++) {
+        var result = '';
+        var plainIdx = 0;
+        var inTag = false;
+        for (var i = 0; i < html.length; i++) {
           if (html[i] === '<') {
             inTag = true;
-            // Find end of tag and include it
-            const end = html.indexOf('>', i);
+            var end = html.indexOf('>', i);
             if (end !== -1) {
               result += html.substring(i, end + 1);
               i = end;
@@ -902,8 +902,7 @@
             }
           }
           if (html[i] === '&') {
-            // HTML entity — find the semicolon
-            const semi = html.indexOf(';', i);
+            var semi = html.indexOf(';', i);
             if (semi !== -1 && semi - i < 8) {
               if (plainIdx < charCount) {
                 result += html.substring(i, semi + 1);
@@ -920,81 +919,246 @@
             plainIdx++;
           }
         }
-        // Close any unclosed tags
-        const openTags = [];
-        const tagRe = /<\/?([a-z]+)[^>]*>/gi;
-        let m;
+        var openTags = [];
+        var tagRe = /<\/?([a-z]+)[^>]*>/gi;
+        var m;
         while ((m = tagRe.exec(result)) !== null) {
           if (m[0][1] === '/') openTags.pop();
           else if (!m[0].endsWith('/>')) openTags.push(m[1]);
         }
-        for (let t = openTags.length - 1; t >= 0; t--) {
+        for (var t = openTags.length - 1; t >= 0; t--) {
           result += '</' + openTags[t] + '>';
         }
         return result;
       }
 
-      // Reveal a line instantly
-      function revealLine(el, html, callback) {
-        el.innerHTML = html;
-        if (callback) callback();
+      // Phase 1: Type the mistake version char by char
+      var mistakePlain = stripHtml(mistakeHtml);
+      var charIdx = 0;
+      var speed = 50;
+
+      // Natural hesitation: pause a bit after certain characters
+      function extraDelay(idx) {
+        var ch = mistakePlain[idx - 1];
+        var next = mistakePlain[idx];
+        // Pause after $ prompt
+        if (ch === '$') return 180;
+        // Pause before --demo (space after command)
+        if (ch === 'e' && next === ' ' && idx === 14) return 140;
+        // Pause before string arg
+        if (ch === ' ' && next === '"') return 160;
+        // Small pause after hyphens in the string
+        if (ch === '-' && idx > 20) return 70 + Math.random() * 50;
+        return 0;
       }
 
-      // Sequence through all lines
-      function runSequence(idx) {
-        if (idx >= lines.length) {
-          document.dispatchEvent(new Event('typewriter-done'));
-          return;
+      el.classList.add('term-cursor');
+
+      function typeNext() {
+        if (charIdx <= mistakePlain.length) {
+          el.innerHTML = buildPartialHtml(mistakeHtml, charIdx);
+          var pause = extraDelay(charIdx);
+          charIdx++;
+          setTimeout(typeNext, speed + (Math.random() * 30 - 12) + pause);
+        } else {
+          // Mistake fully typed — pause like "hmm, wait..."
+          setTimeout(startCursorMove, 600);
         }
-        const line = lines[idx];
-        const el = document.getElementById(line.id);
-        if (!el) return;
-
-        setTimeout(() => {
-          if (line.typed) {
-            const plain = stripHtml(line.html);
-            typeLine(el, line.html, plain, () => {
-              runSequence(idx + 1);
-            });
-          } else {
-            revealLine(el, line.html, () => {
-              runSequence(idx + 1);
-            });
-          }
-        }, line.delay);
       }
 
-      runSequence(0);
+      // Phase 2: Move cursor left to just before "fun"
+      var strText; // full text of .str span
+      var cursorPos; // current cursor index within strText
+
+      function startCursorMove() {
+        var strSpan = el.querySelector('.str');
+        if (!strSpan) return;
+        strText = strSpan.textContent; // "steve-having-fun"
+        cursorPos = strText.length;    // cursor at end
+
+        // Switch from ::after cursor to inline cursor
+        el.classList.remove('term-cursor');
+        renderCursor();
+
+        // Target: just before "fun" → index of "f" in "fun""
+        var targetPos = strText.lastIndexOf('fun"');
+        setTimeout(function() { moveCursorLeft(targetPos); }, 300);
+      }
+
+      function renderCursor() {
+        var strSpan = el.querySelector('.str');
+        if (!strSpan) return;
+        var before = strText.slice(0, cursorPos);
+        var after = strText.slice(cursorPos);
+        strSpan.innerHTML = before + '<span class="inline-cursor">\u2588</span>' + after;
+      }
+
+      function moveCursorLeft(targetPos) {
+        if (cursorPos > targetPos) {
+          cursorPos--;
+          renderCursor();
+          setTimeout(function() { moveCursorLeft(targetPos); }, 55 + Math.random() * 25);
+        } else {
+          // Cursor in position — pause, then insert
+          setTimeout(startInsert, 350);
+        }
+      }
+
+      // Phase 3: Insert "too-much-" at cursor position
+      var insertion = 'too-much-';
+      var insIdx = 0;
+
+      function startInsert() {
+        insertNext();
+      }
+
+      function insertNext() {
+        if (insIdx < insertion.length) {
+          strText = strText.slice(0, cursorPos) + insertion[insIdx] + strText.slice(cursorPos);
+          cursorPos++;
+          insIdx++;
+          renderCursor();
+          var insPause = (insertion[insIdx - 1] === '-') ? 60 : 0;
+          setTimeout(insertNext, speed + (Math.random() * 30 - 12) + insPause);
+        } else {
+          // Done inserting — finalize and move to line 2
+          el.innerHTML = finalHtml;
+          el.classList.remove('term-cursor');
+
+          setTimeout(function() {
+            el1.innerHTML = '<span class="output">Loading artifact from the vault...</span>';
+            document.dispatchEvent(new Event('typewriter-done'));
+          }, 400);
+        }
+      }
+
+      // Start after initial delay
+      setTimeout(typeNext, 600);
     })();
 
     // ═══════════════════════════════════════
-    // LOOM VIDEO — LAZY LOAD WITH FLICKER
+    // LOOM VIDEO — BORDER-TRACE REVEAL
     // ═══════════════════════════════════════
     (function initVideoLoad() {
       var iframe = document.getElementById('loom-embed');
-      if (!iframe) return;
+      var frame = document.querySelector('.video-frame');
+      if (!iframe || !frame) return;
 
+      var videoContainer = frame.querySelector('.video-container');
+      var titlebar = frame.querySelector('.frame-titlebar');
+      var dots = frame.querySelectorAll('.frame-dot');
+      var titleText = frame.querySelector('.frame-title');
+      var statusText = frame.querySelector('.frame-status');
+
+      // Initial state: frame hidden, iframe hidden
+      frame.style.opacity = '0';
       iframe.style.opacity = '0';
 
       document.addEventListener('typewriter-done', function() {
         iframe.src = iframe.getAttribute('data-src');
 
-        // Flicker in when loaded
-        iframe.addEventListener('load', function() {
-          var steps = [1, 0, 1, 0, 0.4, 1, 0.2, 1];
-          var i = 0;
-          function flicker() {
-            if (i >= steps.length) {
-              iframe.style.opacity = '1';
-              return;
-            }
-            iframe.style.opacity = steps[i];
-            i++;
-            setTimeout(flicker, 60 + Math.random() * 80);
-          }
-          flicker();
-        });
+        var resolved = false;
+        function onVideoReady() {
+          if (resolved) return;
+          resolved = true;
+
+          // Append "done." to the terminal output
+          var output = document.querySelector('#term-1 .output');
+          if (output) output.textContent += ' done.';
+
+          setTimeout(revealFrame, 150);
+        }
+
+        iframe.addEventListener('load', onVideoReady);
       });
+
+      function revealFrame() {
+        // Show frame background + titlebar (no outer border yet)
+        frame.style.transition = 'opacity 0.15s ease';
+        frame.style.opacity = '1';
+        frame.style.borderColor = 'transparent';
+        if (videoContainer) videoContainer.style.opacity = '0';
+
+        // Hide titlebar elements for staggered reveal
+        dots.forEach(function(d) { d.style.opacity = '0'; d.style.transform = 'scale(0)'; });
+        if (titleText) titleText.style.opacity = '0';
+        if (statusText) statusText.style.opacity = '0';
+
+        // Phase 1: Pop in dots one by one
+        setTimeout(function() {
+          dots.forEach(function(d, i) {
+            setTimeout(function() {
+              d.style.transition = 'opacity 0.12s ease, transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1)';
+              d.style.opacity = '0.7';
+              d.style.transform = 'scale(1)';
+            }, i * 70);
+          });
+
+          // Fade in title + status after last dot
+          var afterDots = dots.length * 70 + 40;
+          setTimeout(function() {
+            if (titleText) { titleText.style.transition = 'opacity 0.15s ease'; titleText.style.opacity = '1'; }
+            if (statusText) { statusText.style.transition = 'opacity 0.15s ease'; statusText.style.opacity = '1'; }
+
+            // Phase 2: Trace border
+            setTimeout(traceBorder, 80);
+          }, afterDots);
+        }, 60);
+      }
+
+      function traceBorder() {
+        var rect = frame.getBoundingClientRect();
+        var svgW = rect.width + 2;
+        var svgH = rect.height + 2;
+        var perimeter = 2 * (svgW + svgH);
+
+        var svgNS = 'http://www.w3.org/2000/svg';
+        var svg = document.createElementNS(svgNS, 'svg');
+        svg.style.cssText = 'position:absolute;top:-1px;left:-1px;pointer-events:none;z-index:10;overflow:visible';
+        svg.style.width = svgW + 'px';
+        svg.style.height = svgH + 'px';
+        svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
+
+        var r = document.createElementNS(svgNS, 'rect');
+        r.setAttribute('x', '0.5');
+        r.setAttribute('y', '0.5');
+        r.setAttribute('width', (svgW - 1).toFixed(1));
+        r.setAttribute('height', (svgH - 1).toFixed(1));
+        r.setAttribute('fill', 'none');
+        r.setAttribute('stroke', '#333333');
+        r.setAttribute('stroke-width', '1');
+        r.style.strokeDasharray = perimeter;
+        r.style.strokeDashoffset = perimeter;
+
+        svg.appendChild(r);
+        frame.appendChild(svg);
+
+        // Trigger trace animation
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            r.style.transition = 'stroke-dashoffset 0.8s ease-in-out';
+            r.style.strokeDashoffset = '0';
+          });
+        });
+
+        // Phase 3: After trace completes, swap to real border + reveal content
+        setTimeout(function() {
+          frame.style.borderColor = '';
+          svg.remove();
+
+          // Fade in video container + iframe together
+          if (videoContainer) {
+            videoContainer.style.transition = 'opacity 0.35s ease';
+            videoContainer.style.opacity = '1';
+          }
+          iframe.style.transition = 'opacity 0.35s ease';
+          iframe.style.opacity = '1';
+
+          setTimeout(function() {
+            document.dispatchEvent(new Event('video-ready'));
+          }, 400);
+        }, 850);
+      }
     })();
 
     // ═══════════════════════════════════════
@@ -1005,11 +1169,12 @@
       var pathEl = document.getElementById('discovery-path-line');
       var panel = document.getElementById('definition-panel');
       var logoGue = document.querySelector('.logo-gue');
+      var logoRo = document.querySelector('.logo-ro');
       if (!svg || !pathEl || !panel || !logoGue) return;
 
       // Reduced motion: instant reveal for accessibility
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        document.addEventListener('typewriter-done', function() {
+        document.addEventListener('video-ready', function() {
           setTimeout(function() {
             panel.classList.remove('unlit');
             panel.classList.add('illuminated');
@@ -1020,7 +1185,7 @@
 
       // Mobile: gold glow pulse sweeps down the page
       if (window.matchMedia('(max-width: 800px)').matches) {
-        document.addEventListener('typewriter-done', function() {
+        document.addEventListener('video-ready', function() {
           setTimeout(function() {
             var container = document.querySelector('.container');
             var cRect = container.getBoundingClientRect();
@@ -1047,8 +1212,17 @@
         return;
       }
 
-      document.addEventListener('typewriter-done', function() {
-        setTimeout(animatePath, 600);
+      document.addEventListener('video-ready', function() {
+        // Pulse "RoGue" to pull eye back up, then start path
+        setTimeout(function() {
+          if (logoRo) logoRo.classList.add('pulse');
+          logoGue.classList.add('pulse');
+          logoGue.addEventListener('animationend', function() {
+            if (logoRo) logoRo.classList.remove('pulse');
+            logoGue.classList.remove('pulse');
+            setTimeout(animatePath, 300);
+          }, { once: true });
+        }, 800);
       });
 
       function animatePath() {
@@ -1208,7 +1382,9 @@
       let coin = { x: 3, y: 3, alive: true };
       let bones = [];
       let animFrame = 0;
-      let moveTimer = 0;
+      let dead = false;
+      let deadTimer = 0;
+      let playerVisible = true;
 
       // Load sprites
       const imgs = {};
@@ -1272,6 +1448,7 @@
       }
 
       function movePlayer() {
+        if (dead) return;
         let target;
         if (coin.alive) {
           target = coin;
@@ -1315,27 +1492,35 @@
         }
 
         if (coin.alive && player.x === coin.x && player.y === coin.y) {
-          coin.alive = false;
+          spawnCoin();
         }
       }
 
       function moveMonster() {
         const neighbors = getFloorNeighbors(monster.x, monster.y);
-        if (neighbors.length > 0) {
+        if (neighbors.length === 0) return;
+
+        // 40% chance to chase the player, 60% random wander
+        if (Math.random() < 0.4) {
+          var best = neighbors[0], bestDist = Infinity;
+          neighbors.forEach(function(n) {
+            var d = Math.abs(n.x - player.x) + Math.abs(n.y - player.y);
+            if (d < bestDist) { bestDist = d; best = n; }
+          });
+          monster.x = best.x;
+          monster.y = best.y;
+        } else {
           const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
           monster.x = pick.x;
           monster.y = pick.y;
         }
       }
 
-      function resetGame() {
-        player = { x: 1, y: 1 };
-        monster = { x: 5, y: 5 };
-        bones = [];
+      function spawnCoin() {
         const floors = [];
         for (let y = 0; y < H; y++)
           for (let x = 0; x < W; x++)
-            if (map[y][x] === 0 && !(x === 1 && y === 1) && !(x === 5 && y === 5))
+            if (map[y][x] === 0 && !(x === player.x && y === player.y) && !(x === monster.x && y === monster.y))
               floors.push({ x, y });
         const spot = floors[Math.floor(Math.random() * floors.length)];
         coin = { x: spot.x, y: spot.y, alive: true };
@@ -1372,24 +1557,23 @@
         bones.forEach(function(b) {
           var cx = b.x * ST + ST / 2;
           var cy = b.y * ST + ST / 2;
-          ctx.strokeStyle = '#888';
-          ctx.lineWidth = 1.5;
-          var s = ST * 0.18;
-          ctx.beginPath();
-          ctx.moveTo(cx - s, cy - s); ctx.lineTo(cx + s, cy + s);
-          ctx.moveTo(cx + s, cy - s); ctx.lineTo(cx - s, cy + s);
-          ctx.stroke();
+          ctx.font = Math.round(ST * 0.65) + 'px serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('\uD83E\uDDB4', cx, cy);
         });
 
         var mSheet = animFrame === 0 ? 'slime0' : 'slime1';
         drawTile(mSheet, 4, 0, monster.x, monster.y);
 
-        const pSheet = animFrame === 0 ? 'player0' : 'player1';
-        drawTile(pSheet, 0, 0, player.x, player.y);
+        if (playerVisible) {
+          const pSheet = animFrame === 0 ? 'player0' : 'player1';
+          drawTile(pSheet, 0, 0, player.x, player.y);
+        }
       }
 
       function startGame() {
-        resetGame();
+        spawnCoin();
 
         let lastAnim = 0;
         let lastMove = 0;
@@ -1406,10 +1590,19 @@
             moveMonster();
             lastMove = time;
 
+            // Monster eats old bones it walks over (before new bones placed)
+            bones = bones.filter(function(b) {
+              return !(b.x === monster.x && b.y === monster.y);
+            });
+
             // Monster kills player on overlap
-            if (player.x === monster.x && player.y === monster.y) {
+            if (!dead && player.x === monster.x && player.y === monster.y) {
               bones.push({ x: player.x, y: player.y });
-              // Respawn far from monster
+              dead = true;
+              deadTimer = 0;
+              playerVisible = false;
+
+              // Find respawn point far from monster
               var bestDist = -1, bestPos = { x: 1, y: 1 };
               for (var ry = 0; ry < H; ry++)
                 for (var rx = 0; rx < W; rx++)
@@ -1421,17 +1614,21 @@
               player.y = bestPos.y;
             }
 
-            // Monster eats bones it walks over
-            bones = bones.filter(function(b) {
-              return !(b.x === monster.x && b.y === monster.y);
-            });
+          }
 
-            if (!coin.alive) {
-              moveTimer++;
-              if (moveTimer > 4) {
-                resetGame();
-                moveTimer = 0;
-              }
+          // Death pause + flicker respawn
+          if (dead) {
+            deadTimer++;
+            if (deadTimer < 30) {
+              // Pause: player invisible (bones visible at death spot)
+              playerVisible = false;
+            } else if (deadTimer < 50) {
+              // Flicker phase: rapid on/off
+              playerVisible = (deadTimer % 3 !== 0);
+            } else {
+              // Fully respawned
+              dead = false;
+              playerVisible = true;
             }
           }
 
