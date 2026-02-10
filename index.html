@@ -748,7 +748,7 @@
       .definition-panel {
         width: 100%;
         order: 1; /* Definition below video on mobile */
-        margin-top: 1rem;
+        margin-top: 2.5rem;
       }
       .main-column {
         order: 0;
@@ -1452,7 +1452,7 @@
         if (gx === monster.x && gy === monster.y) {
           slimePower = 15;
         } else if (gx === player.x && gy === player.y && !dead) {
-          playerPower = 5;
+          playerPower = 3;
         }
       });
       var statStreakCur = document.getElementById('stat-streak-cur');
@@ -1580,8 +1580,8 @@
           if (playerPower > 0) {
             playerPower--;
             spawnCoin();
-            // Spawn 2 extra coins
-            for (var ei = 0; ei < 2; ei++) {
+            // Spawn 1 extra coin
+            for (var ei = 0; ei < 1; ei++) {
               var ef = getOpenFloors();
               if (ef.length > 0) {
                 var es = ef[Math.floor(Math.random() * ef.length)];
