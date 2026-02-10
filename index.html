@@ -1174,8 +1174,9 @@
 
       // Entities
       let player = { x: 1, y: 1 };
-      let monster = { x: 5, y: 5, alive: true };
+      let monster = { x: 5, y: 5 };
       let coin = { x: 3, y: 3, alive: true };
+      let bones = [];
       let animFrame = 0;
       let moveTimer = 0;
 
@@ -1244,8 +1245,6 @@
         let target;
         if (coin.alive) {
           target = coin;
-        } else if (monster.alive) {
-          target = monster;
         } else {
           const neighbors = getFloorNeighbors(player.x, player.y);
           if (neighbors.length > 0) {
@@ -1288,13 +1287,9 @@
         if (coin.alive && player.x === coin.x && player.y === coin.y) {
           coin.alive = false;
         }
-        if (monster.alive && player.x === monster.x && player.y === monster.y) {
-          monster.alive = false;
-        }
       }
 
       function moveMonster() {
-        if (!monster.alive) return;
         const neighbors = getFloorNeighbors(monster.x, monster.y);
         if (neighbors.length > 0) {
           const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
@@ -1305,7 +1300,8 @@
 
       function resetGame() {
         player = { x: 1, y: 1 };
-        monster = { x: 5, y: 5, alive: true };
+        monster = { x: 5, y: 5 };
+        bones = [];
         const floors = [];
         for (let y = 0; y < H; y++)
           for (let x = 0; x < W; x++)
@@ -1342,10 +1338,21 @@
           ctx.shadowBlur = 0;
         }
 
-        if (monster.alive) {
-          const sheet = animFrame === 0 ? 'slime0' : 'slime1';
-          drawTile(sheet, 4, 0, monster.x, monster.y);
-        }
+        // Draw bones
+        bones.forEach(function(b) {
+          var cx = b.x * ST + ST / 2;
+          var cy = b.y * ST + ST / 2;
+          ctx.strokeStyle = '#888';
+          ctx.lineWidth = 1.5;
+          var s = ST * 0.18;
+          ctx.beginPath();
+          ctx.moveTo(cx - s, cy - s); ctx.lineTo(cx + s, cy + s);
+          ctx.moveTo(cx + s, cy - s); ctx.lineTo(cx - s, cy + s);
+          ctx.stroke();
+        });
+
+        var mSheet = animFrame === 0 ? 'slime0' : 'slime1';
+        drawTile(mSheet, 4, 0, monster.x, monster.y);
 
         const pSheet = animFrame === 0 ? 'player0' : 'player1';
         drawTile(pSheet, 0, 0, player.x, player.y);
@@ -1369,7 +1376,27 @@
             moveMonster();
             lastMove = time;
 
-            if (!coin.alive && !monster.alive) {
+            // Monster kills player on overlap
+            if (player.x === monster.x && player.y === monster.y) {
+              bones.push({ x: player.x, y: player.y });
+              // Respawn far from monster
+              var bestDist = -1, bestPos = { x: 1, y: 1 };
+              for (var ry = 0; ry < H; ry++)
+                for (var rx = 0; rx < W; rx++)
+                  if (map[ry][rx] === 0) {
+                    var d = Math.abs(rx - monster.x) + Math.abs(ry - monster.y);
+                    if (d > bestDist) { bestDist = d; bestPos = { x: rx, y: ry }; }
+                  }
+              player.x = bestPos.x;
+              player.y = bestPos.y;
+            }
+
+            // Monster eats bones it walks over
+            bones = bones.filter(function(b) {
+              return !(b.x === monster.x && b.y === monster.y);
+            });
+
+            if (!coin.alive) {
               moveTimer++;
               if (moveTimer > 4) {
                 resetGame();
