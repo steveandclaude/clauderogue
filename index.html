@@ -1586,29 +1586,26 @@
 
           // Move entities every 1200ms
           if (time - lastMove > 1200) {
-            // Save positions to detect swaps
-            var prevPx = player.x, prevPy = player.y;
-            var prevMx = monster.x, prevMy = monster.y;
-
             movePlayer();
+
+            // Check collision after player moves (before monster escapes)
+            var killed = !dead && (player.x === monster.x && player.y === monster.y);
+
             moveMonster();
             lastMove = time;
 
-            // Detect swap (player moved to monster's old spot AND vice versa)
-            var swapped = (player.x === prevMx && player.y === prevMy &&
-                           monster.x === prevPx && monster.y === prevPy);
+            // Also check after monster moves onto player
+            if (!killed && !dead) {
+              killed = (player.x === monster.x && player.y === monster.y);
+            }
 
             // Monster eats old bones it walks over (before new bones placed)
             bones = bones.filter(function(b) {
               return !(b.x === monster.x && b.y === monster.y);
             });
 
-            // Monster kills player on overlap or swap
-            if (!dead && (swapped || (player.x === monster.x && player.y === monster.y))) {
-              // Place bones at the encounter point
-              var boneX = swapped ? prevPx : player.x;
-              var boneY = swapped ? prevPy : player.y;
-              bones.push({ x: boneX, y: boneY });
+            if (killed) {
+              bones.push({ x: player.x, y: player.y });
               dead = true;
               deadTimer = 0;
               playerVisible = false;
