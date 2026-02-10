@@ -351,7 +351,7 @@
     }
 
     .term-line {
-      font-size: 0.8rem;
+      font-size: 0.8rem; /* fallback, overridden by JS auto-sizing */
       line-height: 1.7;
       color: var(--text-dim);
       min-height: 1.2em;
@@ -742,14 +742,12 @@
       .container { padding: 1rem; }
       .footer { flex-direction: column; align-items: center; text-align: center; }
       .footer-ascii { display: none; }
-      .term-line { font-size: 0.65rem; }
     }
 
     @media (max-width: 520px) {
       .definition-panel {
         width: 100%;
       }
-      .term-line { font-size: 0.55rem; }
     }
 
     @media (min-width: 801px) and (max-width: 1000px) {
@@ -867,6 +865,30 @@
         span.style.fontSize = (0.5 + Math.random() * 0.5) + 'rem';
         container.appendChild(span);
       }
+    })();
+
+    // ═══════════════════════════════════════
+    // TERMINAL FONT SIZING — fit longest line to container
+    // ═══════════════════════════════════════
+    (function sizeTerminalFont() {
+      var intro = document.querySelector('.terminal-intro');
+      if (!intro) return;
+      var finalText = '$ claude-rogue --demo "steve-having-too-much-fun"';
+
+      // Measure with a hidden probe at 1rem
+      var probe = document.createElement('span');
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-family:' + getComputedStyle(intro).fontFamily + ';font-size:1rem';
+      probe.textContent = finalText + '\u2588'; // include cursor block
+      document.body.appendChild(probe);
+      var textWidth = probe.offsetWidth;
+      document.body.removeChild(probe);
+
+      var available = intro.clientWidth;
+      var ideal = available / textWidth; // rem per 1rem at which text fits
+      var clamped = Math.min(Math.max(ideal, 0.5), 0.95); // clamp range
+
+      var lines = intro.querySelectorAll('.term-line');
+      lines.forEach(function(l) { l.style.fontSize = clamped + 'rem'; });
     })();
 
     // ═══════════════════════════════════════
