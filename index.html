@@ -780,7 +780,7 @@
           </div>
 
           <div class="video-container">
-            <iframe src="https://www.loom.com/embed/8c7a739e583248c1828392388dacd072" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+            <iframe id="loom-embed" data-src="https://www.loom.com/embed/8c7a739e583248c1828392388dacd072" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
           </div>
 
         </div>
@@ -965,6 +965,36 @@
       }
 
       runSequence(0);
+    })();
+
+    // ═══════════════════════════════════════
+    // LOOM VIDEO — LAZY LOAD WITH FLICKER
+    // ═══════════════════════════════════════
+    (function initVideoLoad() {
+      var iframe = document.getElementById('loom-embed');
+      if (!iframe) return;
+
+      iframe.style.opacity = '0';
+
+      document.addEventListener('typewriter-done', function() {
+        iframe.src = iframe.getAttribute('data-src');
+
+        // Flicker in when loaded
+        iframe.addEventListener('load', function() {
+          var steps = [1, 0, 1, 0, 0.4, 1, 0.2, 1];
+          var i = 0;
+          function flicker() {
+            if (i >= steps.length) {
+              iframe.style.opacity = '1';
+              return;
+            }
+            iframe.style.opacity = steps[i];
+            i++;
+            setTimeout(flicker, 60 + Math.random() * 80);
+          }
+          flicker();
+        });
+      });
     })();
 
     // ═══════════════════════════════════════
