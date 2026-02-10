@@ -1434,6 +1434,27 @@
       let coinStreak = 0;
       let bestStreak = 0;
       let maxBones = 0;
+      let slimePower = 0;   // moves remaining for slime power-up
+      let playerPower = 0;  // coin spawns remaining for multi-coin
+      let extraCoins = [];  // additional coins from player power-up
+
+      // Click handler — detect which character was tapped
+      canvas.style.cursor = 'pointer';
+      canvas.addEventListener('click', function(e) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = canvas.width / rect.width;
+        var scaleY = canvas.height / rect.height;
+        var cx = (e.clientX - rect.left) * scaleX;
+        var cy = (e.clientY - rect.top) * scaleY;
+        var gx = Math.floor(cx / ST);
+        var gy = Math.floor(cy / ST);
+
+        if (gx === monster.x && gy === monster.y) {
+          slimePower = 15;
+        } else if (gx === player.x && gy === player.y && !dead) {
+          playerPower = 5;
+        }
+      });
       var statStreakCur = document.getElementById('stat-streak-cur');
       var statStreakBest = document.getElementById('stat-streak-best');
       var statBonesCur = document.getElementById('stat-bones-cur');
@@ -1552,11 +1573,34 @@
           }
         }
 
+        // Collect main coin
         if (coin.alive && player.x === coin.x && player.y === coin.y) {
           coinStreak++;
           if (coinStreak > bestStreak) bestStreak = coinStreak;
-          spawnCoin();
+          if (playerPower > 0) {
+            playerPower--;
+            spawnCoin();
+            // Spawn 2 extra coins
+            for (var ei = 0; ei < 2; ei++) {
+              var ef = getOpenFloors();
+              if (ef.length > 0) {
+                var es = ef[Math.floor(Math.random() * ef.length)];
+                extraCoins.push({ x: es.x, y: es.y });
+              }
+            }
+          } else {
+            spawnCoin();
+          }
           updateStats();
+        }
+        // Collect extra coins
+        for (var ec = extraCoins.length - 1; ec >= 0; ec--) {
+          if (player.x === extraCoins[ec].x && player.y === extraCoins[ec].y) {
+            coinStreak++;
+            if (coinStreak > bestStreak) bestStreak = coinStreak;
+            extraCoins.splice(ec, 1);
+            updateStats();
+          }
         }
       }
 
@@ -1564,8 +1608,9 @@
         const neighbors = getFloorNeighbors(monster.x, monster.y);
         if (neighbors.length === 0) return;
 
-        // 55% chance to chase the player, 45% random wander
-        if (Math.random() < 0.55) {
+        // Powered slime always chases, normal: 55% chase
+        var chaseRate = slimePower > 0 ? 0.65 : 0.55;
+        if (Math.random() < chaseRate) {
           var best = neighbors[0], bestDist = Infinity;
           neighbors.forEach(function(n) {
             var d = Math.abs(n.x - player.x) + Math.abs(n.y - player.y);
@@ -1578,6 +1623,15 @@
           monster.x = pick.x;
           monster.y = pick.y;
         }
+      }
+
+      function getOpenFloors() {
+        var floors = [];
+        for (var y = 0; y < H; y++)
+          for (var x = 0; x < W; x++)
+            if (map[y][x] === 0 && !(x === player.x && y === player.y) && !(x === monster.x && y === monster.y))
+              floors.push({ x: x, y: y });
+        return floors;
       }
 
       function spawnCoin() {
@@ -1627,12 +1681,48 @@
           ctx.fillText('\uD83E\uDDB4', cx, cy);
         });
 
+        // Draw extra coins from player power-up
+        extraCoins.forEach(function(ec) {
+          var ecx = ec.x * ST + ST / 2;
+          var ecy = ec.y * ST + ST / 2;
+          ctx.fillStyle = '#d4a853';
+          ctx.shadowColor = 'rgba(212, 168, 83, 0.6)';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(ecx, ecy, Math.max(3, ST * 0.15), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        });
+
+        // Draw slime — glow + jiggle if powered
+        if (slimePower > 0) {
+          ctx.shadowColor = 'rgba(232, 129, 138, 0.8)';
+          ctx.shadowBlur = 8;
+          ctx.save();
+          var mjx = monster.x * ST + ST / 2;
+          var mjy = monster.y * ST + ST / 2;
+          var jiggle = (Math.sin(Date.now() * 0.02) * 1.5);
+          ctx.translate(mjx + jiggle, mjy);
+          ctx.translate(-mjx, -mjy);
+        }
         var mSheet = animFrame === 0 ? 'slime0' : 'slime1';
         drawTile(mSheet, 4, 0, monster.x, monster.y);
+        if (slimePower > 0) {
+          ctx.restore();
+          ctx.shadowBlur = 0;
+        }
 
+        // Draw player — glow if powered
         if (playerVisible) {
+          if (playerPower > 0) {
+            ctx.shadowColor = 'rgba(212, 168, 83, 0.8)';
+            ctx.shadowBlur = 8;
+          }
           const pSheet = animFrame === 0 ? 'player0' : 'player1';
           drawTile(pSheet, 0, 0, player.x, player.y);
+          if (playerPower > 0) {
+            ctx.shadowBlur = 0;
+          }
         }
       }
 
@@ -1663,12 +1753,14 @@
               killed = (player.x === monster.x && player.y === monster.y);
             }
 
-            // Monster eats old bones it walks over (before new bones placed)
-            var prevLen = bones.length;
-            bones = bones.filter(function(b) {
-              return !(b.x === monster.x && b.y === monster.y);
-            });
-            if (bones.length !== prevLen) updateStats();
+            // Monster eats old bones it walks over (skip if powered up)
+            if (slimePower <= 0) {
+              var prevLen = bones.length;
+              bones = bones.filter(function(b) {
+                return !(b.x === monster.x && b.y === monster.y);
+              });
+              if (bones.length !== prevLen) updateStats();
+            }
 
             if (killed) {
               bones.push({ x: player.x, y: player.y });
@@ -1690,6 +1782,8 @@
               player.y = bestPos.y;
             }
 
+            // Decrement slime power per move step
+            if (slimePower > 0) slimePower--;
           }
 
           // Death pause + flicker respawn
