@@ -846,8 +846,8 @@
               <div class="mini-scanlines"></div>
             </div>
             <div class="mini-game-stats">
-              <span class="stat" title="Best coin streak without dying">● <span id="stat-streak">0</span></span>
-              <span class="stat" title="Most bones on the floor at once">🦴 <span id="stat-bones">0</span></span>
+              <span class="stat" title="Coins: current streak / best streak">● <span id="stat-streak-cur">0</span>/<span id="stat-streak-best">0</span></span>
+              <span class="stat" title="Bones: on floor now / most at once">🦴 <span id="stat-bones-cur">0</span>/<span id="stat-bones-best">0</span></span>
             </div>
           </div>
         </div>
@@ -1434,8 +1434,18 @@
       let coinStreak = 0;
       let bestStreak = 0;
       let maxBones = 0;
-      var statStreakEl = document.getElementById('stat-streak');
-      var statBonesEl = document.getElementById('stat-bones');
+      var statStreakCur = document.getElementById('stat-streak-cur');
+      var statStreakBest = document.getElementById('stat-streak-best');
+      var statBonesCur = document.getElementById('stat-bones-cur');
+      var statBonesBest = document.getElementById('stat-bones-best');
+
+      function updateStats() {
+        if (statStreakCur) statStreakCur.textContent = coinStreak;
+        if (statStreakBest) statStreakBest.textContent = bestStreak;
+        if (statBonesCur) statBonesCur.textContent = bones.length;
+        if (bones.length > maxBones) maxBones = bones.length;
+        if (statBonesBest) statBonesBest.textContent = maxBones;
+      }
 
       // Load sprites
       const imgs = {};
@@ -1544,11 +1554,9 @@
 
         if (coin.alive && player.x === coin.x && player.y === coin.y) {
           coinStreak++;
-          if (coinStreak > bestStreak) {
-            bestStreak = coinStreak;
-            if (statStreakEl) statStreakEl.textContent = bestStreak;
-          }
+          if (coinStreak > bestStreak) bestStreak = coinStreak;
           spawnCoin();
+          updateStats();
         }
       }
 
@@ -1656,17 +1664,16 @@
             }
 
             // Monster eats old bones it walks over (before new bones placed)
+            var prevLen = bones.length;
             bones = bones.filter(function(b) {
               return !(b.x === monster.x && b.y === monster.y);
             });
+            if (bones.length !== prevLen) updateStats();
 
             if (killed) {
               bones.push({ x: player.x, y: player.y });
               coinStreak = 0;
-              if (bones.length > maxBones) {
-                maxBones = bones.length;
-                if (statBonesEl) statBonesEl.textContent = maxBones;
-              }
+              updateStats();
               dead = true;
               deadTimer = 0;
               playerVisible = false;
